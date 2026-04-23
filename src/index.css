@@ -5,10 +5,8 @@
   --color-brand-secondary: #6366f1;
 }
 
-/* Force class-based dark mode for Tailwind v4 */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* ── Custom scrollbar ─────────────────────────── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
@@ -17,7 +15,6 @@
 }
 ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-/* ── Design System Variables ─────────────────── */
 :root {
   --bg-main: #f8fafc;
   --bg-card: #ffffff;
@@ -30,17 +27,16 @@
 }
 
 .dark {
-  --bg-main: #020617; /* Deepest blue/black */
-  --bg-card: #0f172a; /* Slate 900 */
+  --bg-main: #020617;
+  --bg-card: #0f172a;
   --bg-sidebar: #0f172a;
-  --border-dim: #1e293b; /* Slate 800 */
-  --border-med: #334155; /* Slate 700 */
-  --text-primary: #f8fafc; /* Slate 50 */
-  --text-secondary: #cbd5e1; /* Slate 300 */
-  --text-muted: #64748b; /* Slate 500 */
+  --border-dim: #1e293b;
+  --border-med: #334155;
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #64748b;
 }
 
-/* ── Base ─────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
 
 body {
@@ -51,7 +47,3 @@ body {
   -webkit-font-smoothing: antialiased;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
-
-/* Utility to bridge CSS variables to Tailwind if needed, 
-   but for now we'll use Tailwind's direct 'dark:' classes 
-   for more complex components. */

@@ -12,8 +12,7 @@ import {
 } from 'lucide-react';
 import { inventoryService } from '../services/inventoryService';
 import type { Transaction } from '../types/inventory';
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+import { useAuth } from '../contexts/AuthContext';
 
 const TYPE_STYLE: Record<string, string> = {
   'USE': 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20',
@@ -22,19 +21,16 @@ const TYPE_STYLE: Record<string, string> = {
   'DEFAULT': 'bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700',
 };
 
-// ─── Main Component ──────────────────────────────────────────────────────────
-
 const LedgerPage: React.FC<{ searchQuery?: string }> = ({ searchQuery = '' }) => {
+  const { user } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Filters State
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('All');
   const [dateFilter, setDateFilter] = useState({ start: '', end: '' });
 
-  // Sync internal search with external searchQuery prop
   useEffect(() => {
     if (searchQuery !== undefined) {
       setSearch(searchQuery);
@@ -42,6 +38,7 @@ const LedgerPage: React.FC<{ searchQuery?: string }> = ({ searchQuery = '' }) =>
   }, [searchQuery]);
 
   const loadData = async () => {
+    if (!user) return;
     setLoading(true);
     try {
       const data = await inventoryService.fetchTransactions();
@@ -55,9 +52,8 @@ const LedgerPage: React.FC<{ searchQuery?: string }> = ({ searchQuery = '' }) =>
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [user]);
 
-  // Filter Logic
   const filteredTransactions = useMemo(() => {
     return transactions.filter(t => {
       const matchesSearch = 
@@ -95,7 +91,6 @@ const LedgerPage: React.FC<{ searchQuery?: string }> = ({ searchQuery = '' }) =>
 
   return (
     <div className="space-y-6 pb-10">
-      {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 dark:text-white tracking-tight flex items-center gap-2">
@@ -113,9 +108,7 @@ const LedgerPage: React.FC<{ searchQuery?: string }> = ({ searchQuery = '' }) =>
         </button>
       </div>
 
-      {/* ── Filters Bar ── */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm p-4 grid grid-cols-1 md:grid-cols-4 gap-4 transition-colors">
-        {/* Search */}
         <div className="relative">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
@@ -127,7 +120,6 @@ const LedgerPage: React.FC<{ searchQuery?: string }> = ({ searchQuery = '' }) =>
           />
         </div>
 
-        {/* Type Filter */}
         <div className="relative">
           <Filter size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold" />
           <select
@@ -142,7 +134,6 @@ const LedgerPage: React.FC<{ searchQuery?: string }> = ({ searchQuery = '' }) =>
           </select>
         </div>
 
-        {/* Date Range */}
         <div className="md:col-span-2 flex items-center gap-2">
            <div className="relative flex-1">
              <Calendar size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -166,7 +157,6 @@ const LedgerPage: React.FC<{ searchQuery?: string }> = ({ searchQuery = '' }) =>
         </div>
       </div>
 
-      {/* ── Table Container ── */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -240,7 +230,6 @@ const LedgerPage: React.FC<{ searchQuery?: string }> = ({ searchQuery = '' }) =>
           </table>
         </div>
 
-        {/* Footer info */}
         {!loading && filteredTransactions.length > 0 && (
           <div className="px-6 py-4 bg-slate-50/30 dark:bg-slate-800/10 border-t border-slate-50 dark:border-slate-800">
             <p className="text-xs text-slate-400 dark:text-slate-500">

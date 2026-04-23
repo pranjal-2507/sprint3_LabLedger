@@ -16,10 +16,12 @@ import {
 } from 'lucide-react';
 import { inventoryService } from '../services/inventoryService';
 import type { InventoryItem } from '../types/inventory';
+import { useAuth } from '../contexts/AuthContext';
 
 const COLORS = ['#0ea5e9', '#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#f59e0b'];
 
 const ReportsPage: React.FC = () => {
+  const { user } = useAuth();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [topItems, setTopItems] = useState<{ name: string; total: number }[]>([]);
   const [catVolume, setCatVolume] = useState<{ category: string; volume: number }[]>([]);
@@ -28,6 +30,7 @@ const ReportsPage: React.FC = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!user) return;
       try {
         const [allInventory, topUsage, volumeData] = await Promise.all([
           inventoryService.fetchItems(),
@@ -44,11 +47,9 @@ const ReportsPage: React.FC = () => {
       }
     };
     fetchData();
-  }, []);
+  }, [user]);
 
   const handleExportPDF = () => {
-    // We use the native browser print functionality.
-    // The Layout component is already configured to hide the Sidebar/Navbar during print.
     window.print();
   };
 
@@ -82,7 +83,6 @@ const ReportsPage: React.FC = () => {
 
   return (
     <div className="space-y-8 pb-10">
-      {/* ── Header (Excluded from PDF) ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 dark:text-white tracking-tight flex items-center gap-2">
@@ -102,17 +102,13 @@ const ReportsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Capturable Content ── */}
       <div className="space-y-8 print:p-8 print:bg-white" ref={reportContentRef}>
-        {/* Print Title (Only visible when printing) */}
         <div className="hidden print:block mb-10 border-b pb-6">
           <h2 className="text-3xl font-black text-slate-900 italic tracking-tighter">LabLedger <span className="text-sky-600">Analytics</span></h2>
           <p className="text-sm text-slate-500 mt-2">Inventory Report Generated on {new Date().toLocaleDateString()}</p>
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-          
-          {/* ── Most Consumed Items ── */}
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm p-6 overflow-hidden transition-colors print:shadow-none print:border print:border-slate-200">
             <div className="flex items-center gap-3 mb-8">
               <div className="p-2 bg-rose-50 dark:bg-rose-500/10 rounded-xl text-rose-500 print:bg-rose-50 print:text-rose-500">
@@ -137,7 +133,6 @@ const ReportsPage: React.FC = () => {
             </div>
           </div>
 
-          {/* ── Asset Distribution ── */}
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm p-6 overflow-hidden transition-colors print:shadow-none print:border print:border-slate-200">
             <div className="flex items-center gap-3 mb-8">
               <div className="p-2 bg-indigo-50 dark:bg-indigo-500/10 rounded-xl text-indigo-500 print:bg-indigo-50 print:text-indigo-500">
@@ -173,7 +168,6 @@ const ReportsPage: React.FC = () => {
             </div>
           </div>
 
-          {/* ── Expiry Outlook ── */}
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm p-6 lg:col-span-1 transition-colors print:shadow-none print:border print:border-slate-200">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-2 bg-amber-50 dark:bg-amber-500/10 rounded-xl text-amber-500 print:bg-amber-50 print:text-amber-500">
@@ -204,7 +198,6 @@ const ReportsPage: React.FC = () => {
             </div>
           </div>
 
-          {/* ── Key Metrics ── */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
              <div className="bg-gradient-to-br from-sky-500 to-indigo-600 rounded-3xl p-6 text-white shadow-lg relative overflow-hidden group print:bg-sky-600 print:from-sky-600 print:to-sky-600 print:shadow-none">
                 <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform print:hidden text-white">

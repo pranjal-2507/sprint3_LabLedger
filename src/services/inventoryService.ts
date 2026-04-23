@@ -1,49 +1,31 @@
 import { supabase } from '../lib/supabase';
-import type { InventoryItem, InventoryItemInsert } from '../types/inventory';
+import type { InventoryItem, InventoryItemInsert, Transaction } from '../types/inventory';
 
-// Updated Table Names based on new schema
 const TABLE_NAME = 'items'; 
 
 export const inventoryService = {
-  /**
-   * Fetches all items from the items table.
-   */
   async fetchItems(): Promise<InventoryItem[]> {
     const { data, error } = await supabase
       .from(TABLE_NAME)
       .select('*')
       .order('name', { ascending: true });
 
-    if (error) {
-      console.error('Supabase Error (fetchItems):', error.message, error.details);
-      throw error;
-    }
-
+    if (error) throw error;
     return data as InventoryItem[];
   },
 
-  /**
-   * Adds a new item to the inventory.
-   */
-  async addItem(item: InventoryItemInsert): Promise<InventoryItem> {
+  async addItem(item: InventoryItemInsert, userId: string): Promise<InventoryItem> {
     const { data, error } = await supabase
       .from(TABLE_NAME)
-      .insert([item])
+      .insert([{ ...item, user_id: userId }])
       .select()
       .single();
 
-    if (error) {
-      console.error('Error adding inventory item:', error);
-      throw error;
-    }
-
+    if (error) throw error;
     return data as InventoryItem;
   },
 
-  /**
-   * Updates the quantity of an existing item.
-   */
-  async updateItemQuantity(id: number, quantity: number): Promise<InventoryItem> {
+  async updateItemQuantity(id: number, quantity: number, _userId: string): Promise<InventoryItem> {
     const { data, error } = await supabase
       .from(TABLE_NAME)
       .update({ quantity })
@@ -51,32 +33,19 @@ export const inventoryService = {
       .select()
       .single();
 
-    if (error) {
-      console.error('Error updating item quantity:', error);
-      throw error;
-    }
-
+    if (error) throw error;
     return data as InventoryItem;
   },
 
-  /**
-   * Deletes an item from the inventory.
-   */
   async deleteItem(id: number): Promise<void> {
     const { error } = await supabase
       .from(TABLE_NAME)
       .delete()
       .eq('id', id);
 
-    if (error) {
-      console.error('Error deleting inventory item:', error);
-      throw error;
-    }
+    if (error) throw error;
   },
 
-  /**
-   * Updates a full inventory record.
-   */
   async updateItem(id: number, item: Partial<InventoryItemInsert>): Promise<InventoryItem> {
     const { data, error } = await supabase
       .from(TABLE_NAME)
@@ -85,17 +54,10 @@ export const inventoryService = {
       .select()
       .single();
 
-    if (error) {
-      console.error('Error updating inventory item:', error);
-      throw error;
-    }
-
+    if (error) throw error;
     return data as InventoryItem;
   },
 
-  /**
-   * Fetches counts grouped by category for the breakdown chart.
-   */
   async getCategoryBreakdown() {
     const { data, error } = await supabase
       .from(TABLE_NAME)
@@ -111,9 +73,6 @@ export const inventoryService = {
     return Object.entries(counts).map(([category, count]) => ({ category, count }));
   },
 
-  /**
-   * Fetches items that are at or below their min_stock level.
-   */
   async getLowStockItems(): Promise<InventoryItem[]> {
     const { data, error } = await supabase
       .from(TABLE_NAME)
@@ -124,9 +83,6 @@ export const inventoryService = {
     return (data as InventoryItem[]).filter(item => item.quantity <= item.min_stock);
   },
 
-  /**
-   * Fetches the latest usage logs for the 'Recently Used' feed.
-   */
   async getRecentUsage(limit = 5) {
     const { data, error } = await supabase
       .from('transactions')
@@ -134,49 +90,31 @@ export const inventoryService = {
       .order('created_at', { ascending: false })
       .limit(limit);
 
-    if (error) {
-      console.error('Supabase Error (getRecentUsage):', error.message);
-      throw error;
-    }
+    if (error) throw error;
     return data;
   },
 
-  /**
-   * Fetches all transactions for the Ledger/Audit trail.
-   */
   async fetchTransactions(): Promise<Transaction[]> {
     const { data, error } = await supabase
       .from('transactions')
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Supabase Error (fetchTransactions):', error.message);
-      throw error;
-    }
+    if (error) throw error;
     return data as Transaction[];
   },
 
-  /**
-   * Manual transaction logging helper.
-   */
-  async logTransaction(transaction: Omit<Transaction, 'id' | 'created_at'>) {
+  async logTransaction(transaction: Omit<Transaction, 'id' | 'created_at'>, userId: string) {
     const { data, error } = await supabase
       .from('transactions')
-      .insert([transaction])
+      .insert([{ ...transaction, user_id: userId }])
       .select()
       .single();
 
-    if (error) {
-      console.error('Error logging manual transaction:', error);
-      throw error;
-    }
+    if (error) throw error;
     return data;
   },
 
-  /**
-   * Aggregates usage data for the last 7 days for trend charts.
-   */
   async getWeeklyUsage() {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -189,7 +127,6 @@ export const inventoryService = {
 
     if (error) throw error;
 
-    // Group by date
     const dailyMap: Record<string, number> = {};
     for (let i = 0; i < 7; i++) {
         const d = new Date();
@@ -212,9 +149,6 @@ export const inventoryService = {
         .reverse();
   },
 
-  /**
-   * Gets top items by total usage volume.
-   */
   async getTopUsage(limit = 5) {
     const { data, error } = await supabase
       .from('transactions')
@@ -234,9 +168,6 @@ export const inventoryService = {
         .slice(0, limit);
   },
 
-  /**
-   * Gets total quantity of stock held in each category.
-   */
   async getCategoryVolume() {
     const { data, error } = await supabase
       .from(TABLE_NAME)
@@ -252,21 +183,15 @@ export const inventoryService = {
     return Object.entries(volumes).map(([category, volume]) => ({ category, volume }));
   },
 
-  /**
-   * Atomic stock deduction and transaction logging via Postgres RPC.
-   */
-  async logUsage(itemId: number, quantity: number, user: string) {
+  async logUsage(itemId: number, quantity: number, user: string, userId: string) {
     const { data, error } = await supabase.rpc('handle_usage', {
       target_item_id: itemId,
       usage_quantity: quantity,
       user_name: user,
+      target_user_id: userId 
     });
 
-    if (error) {
-      console.error('Usage Logic Error:', error.message);
-      throw error;
-    }
-
+    if (error) throw error;
     return data;
   },
 };

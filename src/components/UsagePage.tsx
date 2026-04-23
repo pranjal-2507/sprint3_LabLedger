@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { inventoryService } from '../services/inventoryService';
 import type { InventoryItem } from '../types/inventory';
+import { useAuth } from '../contexts/AuthContext';
 
 interface UsageForm {
   itemId: string;
@@ -20,6 +21,7 @@ interface UsageForm {
 }
 
 const UsagePage: React.FC = () => {
+  const { user, profile } = useAuth();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -29,23 +31,26 @@ const UsagePage: React.FC = () => {
   const [form, setForm] = useState<UsageForm>({
     itemId: '',
     quantity: '',
-    user: ''
+    user: profile?.full_name || ''
   });
 
-  // Load items for the dropdown
   useEffect(() => {
-    const fetchItems = async () => {
+    const fetchItemsData = async () => {
+      if (!user) return;
       try {
         const data = await inventoryService.fetchItems();
         setItems(data);
+        if (profile?.full_name) {
+          setForm(prev => ({ ...prev, user: profile.full_name }));
+        }
       } catch (err) {
         setError('Failed to load items. Please refresh.');
       } finally {
         setLoading(false);
       }
     };
-    fetchItems();
-  }, []);
+    fetchItemsData();
+  }, [user, profile]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -56,8 +61,8 @@ const UsagePage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) return;
     
-    // Validation
     if (!form.itemId || !form.quantity || !form.user) {
       setError('Please fill in all fields.');
       return;
@@ -79,12 +84,11 @@ const UsagePage: React.FC = () => {
     setError(null);
 
     try {
-      await inventoryService.logUsage(parseInt(form.itemId), qty, form.user);
+      await inventoryService.logUsage(parseInt(form.itemId), qty, form.user, user.id);
       
       setSuccess(`Successfully recorded ${qty} ${selectedItem?.unit || 'units'} used by ${form.user}`);
-      setForm({ itemId: '', quantity: '', user: '' });
+      setForm({ itemId: '', quantity: '', user: profile?.full_name || '' });
       
-      // Refresh local item list to reflect new quantities
       const updatedItems = await inventoryService.fetchItems();
       setItems(updatedItems);
     } catch (err: any) {
@@ -105,18 +109,15 @@ const UsagePage: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-10">
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-slate-800 dark:text-white tracking-tight">Record Inventory Usage</h1>
         <p className="text-slate-400 dark:text-slate-500 text-sm mt-0.5">Deduct stock and log activity in a single transaction</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Main Content */}
         <div className="md:col-span-2 space-y-6">
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm p-6 sm:p-8 transition-colors">
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Item Selection */}
               <div>
                 <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-2 flex items-center gap-2">
                   <Box size={16} className="text-slate-400 dark:text-slate-500" />
@@ -138,7 +139,6 @@ const UsagePage: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Quantity */}
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-2 flex items-center gap-2">
                     <Hash size={16} className="text-slate-400 dark:text-slate-500" />
@@ -154,7 +154,6 @@ const UsagePage: React.FC = () => {
                   />
                 </div>
 
-                {/* User */}
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-2 flex items-center gap-2">
                     <User size={16} className="text-slate-400 dark:text-slate-500" />
@@ -171,7 +170,6 @@ const UsagePage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Status Messages */}
               {error && (
                 <div className="flex items-center gap-2 p-4 bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 rounded-xl border border-rose-100 dark:border-rose-500/20 text-sm animate-in fade-in slide-in-from-top-1">
                   <AlertCircle size={18} />
@@ -186,7 +184,6 @@ const UsagePage: React.FC = () => {
                 </div>
               )}
 
-              {/* Submit Button */}
               <button
                 type="submit"
                 disabled={submitting}
@@ -203,7 +200,6 @@ const UsagePage: React.FC = () => {
           </div>
         </div>
 
-        {/* Sidebar Help */}
         <div className="space-y-6">
           <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-6 border border-slate-100 dark:border-slate-800 flex flex-col items-center justify-center text-center transition-colors">
             {form.itemId ? (

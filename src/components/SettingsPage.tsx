@@ -15,6 +15,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { settingsService, type UserProfile } from '../services/settingsService';
+import { useAuth } from '../contexts/AuthContext';
 
 interface SettingsPageProps {
   isDarkMode: boolean;
@@ -23,11 +24,12 @@ interface SettingsPageProps {
 }
 
 const SettingsPage: React.FC<SettingsPageProps> = ({ isDarkMode, onToggleDarkMode, onProfileUpdate }) => {
+  const { user, profile: authProfile, refreshProfile } = useAuth();
   const [activeTab, setActiveTab] = useState('profile');
   const [profile, setProfile] = useState<UserProfile>({
     full_name: '',
     email: '',
-    role: ''
+    role: '' as any
   });
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -35,8 +37,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ isDarkMode, onToggleDarkMod
 
   useEffect(() => {
     const loadProfile = async () => {
+      if (!user) return;
       try {
-        const data = await settingsService.getProfile();
+        const data = await settingsService.getProfile(user.id);
         setProfile(data);
       } catch (err) {
         console.error('Failed to load profile:', err);
@@ -45,18 +48,19 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ isDarkMode, onToggleDarkMod
       }
     };
     loadProfile();
-  }, []);
+  }, [user]);
 
   const handleSave = async () => {
+    if (!user) return;
     setIsSaving(true);
     try {
-      await settingsService.updateProfile(profile);
+      await settingsService.updateProfile(profile, user.id);
+      await refreshProfile();
       setShowToast(true);
       if (onProfileUpdate) onProfileUpdate();
       setTimeout(() => setShowToast(false), 3000);
     } catch (err: any) {
       console.error('Save failed:', err);
-      // More helpful error message with specific detail
       alert(`Save failed: ${err.message || 'Unknown error'}. \n\nCheck if profiles table exists and RLS is disabled or correctly set.`);
     } finally {
       setIsSaving(false);
@@ -68,7 +72,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ isDarkMode, onToggleDarkMod
     { id: 'appearance', label: 'Appearance', icon: Monitor },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'security', label: 'Security', icon: Shield },
-    { id: 'data', label: 'Inventory Data', icon: Database },
+    ...(authProfile?.role === 'admin' ? [{ id: 'data', label: 'Inventory Data', icon: Database }] : []),
   ];
 
   if (loading) {
@@ -82,15 +86,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ isDarkMode, onToggleDarkMod
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-10 relative">
-      {/* ── Toast Feedback ── */}
       {showToast && (
         <div className="fixed bottom-8 right-8 bg-emerald-500 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-bottom-5 duration-300 z-50">
-          <CheckCircle2 size={20} />
           <span className="font-bold">Settings saved successfully!</span>
         </div>
       )}
 
-      {/* ── Header ── */}
       <div>
         <h1 className="text-2xl font-bold text-slate-800 dark:text-white tracking-tight flex items-center gap-2">
           <Settings className="text-sky-500" size={24} />
@@ -100,8 +101,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ isDarkMode, onToggleDarkMod
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        
-        {/* ── Navigation List ── */}
         <div className="space-y-1">
            {navItems.map(item => (
              <button
@@ -119,9 +118,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ isDarkMode, onToggleDarkMod
            ))}
         </div>
 
-        {/* ── Settings Content ── */}
         <div className="md:col-span-2">
-          
           {activeTab === 'profile' && (
             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
               <section className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
@@ -272,15 +269,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ isDarkMode, onToggleDarkMod
               </section>
             </div>
           )}
-
         </div>
-
       </div>
     </div>
   );
 };
 
-// Helper for the navigation list
 const ChevronRight = ({ size, className }: { size: number, className: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <path d="m9 18 6-6-6-6"/>

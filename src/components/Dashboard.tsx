@@ -11,8 +11,7 @@ import {
 } from 'lucide-react';
 import { inventoryService } from '../services/inventoryService';
 import type { InventoryItem, Status, UsageLog } from '../types/inventory';
-
-// ─── Helpers ──────────────────────────────────────────────────────────────
+import { useAuth } from '../contexts/AuthContext';
 
 const today = new Date();
 today.setHours(0, 0, 0, 0);
@@ -41,8 +40,6 @@ const severityBadges: Record<string, string> = {
   warning: 'bg-orange-100 text-orange-700',
   notice: 'bg-sky-100 text-sky-700',
 };
-
-// ─── Sub-components ─────────────────────────────────────────────────────────
 
 const SummaryCard = ({
   title, value, sub, trend, trendUp, icon: Icon, color, highlight,
@@ -91,9 +88,8 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   );
 };
 
-// ─── Main Component ──────────────────────────────────────────────────────────
-
 const DashboardPage: React.FC = () => {
+  const { user, profile } = useAuth();
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [categoryData, setCategoryData] = useState<{ category: string; count: number }[]>([]);
   const [recentLogs, setRecentLogs] = useState<UsageLog[]>([]);
@@ -102,6 +98,7 @@ const DashboardPage: React.FC = () => {
 
   useEffect(() => {
     const loadDashboardData = async () => {
+      if (!user) return;
       setIsLoading(true);
       try {
         const [allInventory, catBreakdown, logs, trends] = await Promise.all([
@@ -121,10 +118,8 @@ const DashboardPage: React.FC = () => {
       }
     };
     loadDashboardData();
-  }, []);
+  }, [user]);
 
-  // ── Derived Data for Cards & Lists ──
-  
   const lowStockItems = useMemo(() => 
     items.filter(i => i.quantity <= i.min_stock), [items]);
 
@@ -161,8 +156,6 @@ const DashboardPage: React.FC = () => {
 
   return (
     <div className="space-y-7 pb-10">
-
-      {/* ── Page Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 dark:text-white tracking-tight">Lab Inventory Dashboard</h1>
@@ -172,7 +165,6 @@ const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Summary Cards ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
         <SummaryCard
           title="Total Inventory Items"
@@ -213,10 +205,7 @@ const DashboardPage: React.FC = () => {
         />
       </div>
 
-      {/* ── Charts Row ── */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-
-        {/* Usage Trend - Fully Dynamic */}
         <div className="xl:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm p-6 overflow-hidden">
           <div className="flex items-center justify-between mb-8">
             <div>
@@ -265,7 +254,6 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Category Breakdown - Bar Chart (FULLY DYNAMIC) */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm p-6">
           <div className="mb-6">
             <h2 className="font-bold text-slate-800 dark:text-white text-base">Stock by Category</h2>
@@ -283,10 +271,7 @@ const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Alerts + Recent Items Row ── */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-
-        {/* Low Stock Alerts (FULLY DYNAMIC) */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-amber-100 dark:border-amber-500/20 shadow-sm p-6">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2">
@@ -329,7 +314,6 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Expiry Warnings (FULLY DYNAMIC) */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-rose-100 dark:border-rose-500/20 shadow-sm p-6">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2">
@@ -361,7 +345,6 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Recently Used Items (FULLY DYNAMIC) */}
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm p-6">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2">
@@ -395,7 +378,6 @@ const DashboardPage: React.FC = () => {
             })}
           </div>
         </div>
-
       </div>
     </div>
   );

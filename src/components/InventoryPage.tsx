@@ -5,8 +5,7 @@ import {
 } from 'lucide-react';
 import type { InventoryItem, Status, InventoryItemInsert } from '../types/inventory';
 import { inventoryService } from '../services/inventoryService';
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+import { useAuth } from '../contexts/AuthContext';
 
 const today = new Date();
 today.setHours(0, 0, 0, 0);
@@ -30,8 +29,6 @@ const STATUS_DOT: Record<Status, string> = {
   'Expired': 'bg-rose-500',
 };
 
-// ─── Sub-components ──────────────────────────────────────────────────────────
-
 const SortIcon = ({ col, sortKey, sortDir }: { col: SortKey; sortKey: SortKey | null; sortDir: SortDir }) => {
   if (sortKey !== col) return <ChevronsUpDown size={14} className="text-slate-300" />;
   if (sortDir === 'asc') return <ChevronUp size={14} className="text-sky-500" />;
@@ -41,7 +38,7 @@ const SortIcon = ({ col, sortKey, sortDir }: { col: SortKey; sortKey: SortKey | 
 interface ModalProps {
   onClose: () => void;
   onSave: (item: InventoryItemInsert) => Promise<void>;
-  initialData?: InventoryItem; // If present, we are in EDIT mode
+  initialData?: InventoryItem;
 }
 
 const UNITS = ['bottles', 'vials', 'pcs', 'packs', 'kg', 'g', 'mg', 'L', 'mL', 'µL', 'units', 'pairs'];
@@ -100,7 +97,6 @@ const InventoryModal: React.FC<ModalProps> = ({ onClose, onSave, initialData }) 
         className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 z-10 border border-slate-100"
         onClick={e => e.stopPropagation()}
       >
-        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div className={`p-2 rounded-xl ${isEdit ? 'bg-amber-50 text-amber-500' : 'bg-sky-50 text-sky-500'}`}>
@@ -116,11 +112,9 @@ const InventoryModal: React.FC<ModalProps> = ({ onClose, onSave, initialData }) 
           </button>
         </div>
 
-        {/* Form */}
         <div className="space-y-4">
           {errors.submit && <p className="text-sm text-rose-500 bg-rose-50 p-2 rounded-lg border border-rose-100">{errors.submit}</p>}
           
-          {/* Item Name */}
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1.5">Item Name <span className="text-rose-400">*</span></label>
             <input
@@ -136,7 +130,6 @@ const InventoryModal: React.FC<ModalProps> = ({ onClose, onSave, initialData }) 
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            {/* Quantity */}
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1.5">Quantity <span className="text-rose-400">*</span></label>
               <input
@@ -151,7 +144,6 @@ const InventoryModal: React.FC<ModalProps> = ({ onClose, onSave, initialData }) 
               />
               {errors.quantity && <p className="text-xs text-rose-500 mt-1">{errors.quantity}</p>}
             </div>
-            {/* Min Stock */}
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1.5">Min Stock (Alert)</label>
               <input
@@ -166,7 +158,6 @@ const InventoryModal: React.FC<ModalProps> = ({ onClose, onSave, initialData }) 
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-             {/* Unit */}
              <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1.5">Unit</label>
               <select
@@ -177,7 +168,6 @@ const InventoryModal: React.FC<ModalProps> = ({ onClose, onSave, initialData }) 
                 {UNITS.map(u => <option key={u}>{u}</option>)}
               </select>
             </div>
-            {/* Category */}
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1.5">Category</label>
               <select
@@ -190,7 +180,6 @@ const InventoryModal: React.FC<ModalProps> = ({ onClose, onSave, initialData }) 
             </div>
           </div>
 
-          {/* Expiry Date */}
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1.5">Expiry Date <span className="text-rose-400">*</span></label>
             <input
@@ -205,7 +194,6 @@ const InventoryModal: React.FC<ModalProps> = ({ onClose, onSave, initialData }) 
           </div>
         </div>
 
-        {/* Actions */}
         <div className="flex items-center gap-3 mt-6">
           <button
             onClick={onClose}
@@ -230,12 +218,13 @@ const InventoryModal: React.FC<ModalProps> = ({ onClose, onSave, initialData }) 
   );
 };
 
-// ─── Main Page ───────────────────────────────────────────────────────────────
-
 type SortKey = keyof Omit<InventoryItem, 'id'> | 'status';
 type SortDir = 'asc' | 'desc' | null;
 
 const InventoryPage: React.FC<{ searchQuery?: string }> = ({ searchQuery = '' }) => {
+  const { user, profile } = useAuth();
+  const isAdmin = profile?.role === 'admin';
+  
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -249,15 +238,14 @@ const InventoryPage: React.FC<{ searchQuery?: string }> = ({ searchQuery = '' })
   const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>(null);
 
-  // Sync internal search with external searchQuery prop
   useEffect(() => {
     if (searchQuery !== undefined) {
       setSearch(searchQuery);
     }
   }, [searchQuery]);
 
-  // ── Data Fetching ──
   const loadData = async () => {
+    if (!user) return;
     setIsLoading(true);
     setError(null);
     try {
@@ -272,9 +260,8 @@ const InventoryPage: React.FC<{ searchQuery?: string }> = ({ searchQuery = '' })
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [user]);
 
-  // Derived
   const categories = useMemo(() => ['All', ...Array.from(new Set(items.map(i => i.category))).sort()], [items]);
 
   const processed = useMemo(() => {
@@ -314,37 +301,34 @@ const InventoryPage: React.FC<{ searchQuery?: string }> = ({ searchQuery = '' })
   };
 
   const handleSaveItem = async (itemInsert: InventoryItemInsert) => {
+    if (!user || !isAdmin) return;
     try {
       if (editingItem) {
-          // Update
           const updated = await inventoryService.updateItem(editingItem.id, itemInsert);
           setItems(prev => prev.map(i => i.id === updated.id ? updated : i));
           
-          // Log Audit Action
           await inventoryService.logTransaction({
             item_id: updated.id,
             item_name: updated.name,
             type: 'UPDATE',
             quantity: updated.quantity,
-            user: 'Dr. Pranjal',
+            user: profile?.full_name || 'Admin',
             category: updated.category
-          });
+          }, user.id);
 
           setEditingItem(null);
       } else {
-          // Create
-          const newItem = await inventoryService.addItem(itemInsert);
+          const newItem = await inventoryService.addItem(itemInsert, user.id);
           setItems(prev => [newItem, ...prev]);
 
-          // Log Audit Action
           await inventoryService.logTransaction({
             item_id: newItem.id,
             item_name: newItem.name,
             type: 'ADD',
             quantity: newItem.quantity,
-            user: 'Dr. Pranjal',
+            user: profile?.full_name || 'Admin',
             category: newItem.category
-          });
+          }, user.id);
           
           setShowModal(false);
       }
@@ -355,6 +339,7 @@ const InventoryPage: React.FC<{ searchQuery?: string }> = ({ searchQuery = '' })
   };
 
   const deleteItem = async (id: number) => {
+    if (!user || !isAdmin) return;
     if (!window.confirm('Are you sure you want to delete this item?')) return;
     try {
       await inventoryService.deleteItem(id);
@@ -364,7 +349,6 @@ const InventoryPage: React.FC<{ searchQuery?: string }> = ({ searchQuery = '' })
     }
   };
 
-  // Stats
   const inStock = items.filter(i => getStatus(i) === 'In Stock').length;
   const low = items.filter(i => getStatus(i) === 'Low').length;
   const expired = items.filter(i => getStatus(i) === 'Expired').length;
@@ -380,7 +364,6 @@ const InventoryPage: React.FC<{ searchQuery?: string }> = ({ searchQuery = '' })
 
   return (
     <div className="space-y-6 pb-10">
-      {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 dark:text-white tracking-tight">Inventory</h1>
@@ -394,18 +377,19 @@ const InventoryPage: React.FC<{ searchQuery?: string }> = ({ searchQuery = '' })
             >
             <RotateCw size={18} className={isLoading ? 'animate-spin' : ''} />
             </button>
-            <button
-            id="add-item-btn"
-            onClick={() => { setEditingItem(null); setShowModal(true); }}
-            className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-sky-500 hover:bg-sky-600 rounded-xl shadow-md shadow-sky-200 transition-colors"
-            >
-            <Plus size={16} />
-            Add Item
-            </button>
+            {isAdmin && (
+              <button
+              id="add-item-btn"
+              onClick={() => { setEditingItem(null); setShowModal(true); }}
+              className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-sky-500 hover:bg-sky-600 rounded-xl shadow-md shadow-sky-200 transition-colors"
+              >
+              <Plus size={16} />
+              Add Item
+              </button>
+            )}
         </div>
       </div>
 
-      {/* ── Error State ── */}
       {error && (
           <div className="bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 rounded-2xl p-4 flex items-center gap-3 text-rose-700 dark:text-rose-400 text-sm">
               <AlertTriangle size={18} />
@@ -419,7 +403,6 @@ const InventoryPage: React.FC<{ searchQuery?: string }> = ({ searchQuery = '' })
           </div>
       )}
 
-      {/* ── Stat Pills ── */}
       <div className="flex flex-wrap gap-3">
         {[
           { label: 'Total', value: items.length, icon: Package, cls: 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-500/10 dark:text-sky-400 dark:border-sky-500/20' },
@@ -434,7 +417,6 @@ const InventoryPage: React.FC<{ searchQuery?: string }> = ({ searchQuery = '' })
         ))}
       </div>
 
-      {/* ── Filters ── */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm p-4 flex flex-col sm:flex-row gap-3 transition-colors">
         <div className="relative flex-1">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -476,7 +458,6 @@ const InventoryPage: React.FC<{ searchQuery?: string }> = ({ searchQuery = '' })
         </select>
       </div>
 
-      {/* ── Table ── */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden transition-colors">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -494,7 +475,7 @@ const InventoryPage: React.FC<{ searchQuery?: string }> = ({ searchQuery = '' })
                     </div>
                   </th>
                 ))}
-                <th className="px-4 py-3 text-center font-semibold text-slate-500 dark:text-slate-400 w-28 uppercase tracking-wider text-[10px]">Actions</th>
+                {isAdmin && <th className="px-4 py-3 text-center font-semibold text-slate-500 dark:text-slate-400 w-28 uppercase tracking-wider text-[10px]">Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -537,24 +518,26 @@ const InventoryPage: React.FC<{ searchQuery?: string }> = ({ searchQuery = '' })
                         {item.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3.5 text-center">
-                      <div className="flex items-center justify-center gap-1">
-                        <button
-                          onClick={() => { setEditingItem(item); setShowModal(true); }}
-                          className="p-2 text-slate-300 dark:text-slate-600 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-500/10 rounded-lg transition-all"
-                          title="Edit item"
-                        >
-                          <Edit2 size={16} />
-                        </button>
-                        <button
-                          onClick={() => deleteItem(item.id)}
-                          className="p-2 text-slate-300 dark:text-slate-600 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-all"
-                          title="Delete item"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
+                    {isAdmin && (
+                      <td className="px-4 py-3.5 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={() => { setEditingItem(item); setShowModal(true); }}
+                            className="p-2 text-slate-300 dark:text-slate-600 hover:text-sky-500 dark:hover:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-500/10 rounded-lg transition-all"
+                            title="Edit item"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                          <button
+                            onClick={() => deleteItem(item.id)}
+                            className="p-2 text-slate-300 dark:text-slate-600 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-all"
+                            title="Delete item"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))
               )}
@@ -562,7 +545,6 @@ const InventoryPage: React.FC<{ searchQuery?: string }> = ({ searchQuery = '' })
           </table>
         </div>
 
-        {/* Table Footer */}
         {!isLoading && processed.length > 0 && (
           <div className="px-4 py-3 bg-slate-50/60 dark:bg-slate-800/20 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between font-medium">
             <p className="text-xs text-slate-400 dark:text-slate-500">
@@ -572,7 +554,6 @@ const InventoryPage: React.FC<{ searchQuery?: string }> = ({ searchQuery = '' })
         )}
       </div>
 
-      {/* ── Modal ── */}
       {(showModal || editingItem) && (
         <InventoryModal 
             initialData={editingItem || undefined}

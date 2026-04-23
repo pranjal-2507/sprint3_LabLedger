@@ -18,7 +18,6 @@ const Navbar: React.FC<NavbarProps> = ({
 }) => {
   return (
     <header className="sticky top-0 z-40 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 h-16 w-full px-6 flex items-center justify-between transition-colors duration-300">
-      {/* Search Bar */}
       <div className="flex-1 max-w-md">
         <div className="relative group">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-sky-500 transition-colors">
@@ -34,15 +33,12 @@ const Navbar: React.FC<NavbarProps> = ({
         </div>
       </div>
 
-      {/* Right Side Actions */}
       <div className="flex items-center gap-4">
-        {/* Messages */}
         <button className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all relative">
           <MessageCircle size={20} />
           <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-sky-500 rounded-full border-2 border-white dark:border-slate-950"></span>
         </button>
 
-        {/* Notifications */}
         <button className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-all relative">
           <Bell size={20} />
           <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-950"></span>
@@ -50,7 +46,6 @@ const Navbar: React.FC<NavbarProps> = ({
 
         <div className="h-6 w-px bg-slate-200 dark:bg-slate-800 mx-2"></div>
 
-        {/* User Profile */}
         <div 
           className="flex items-center gap-3 pl-2 group cursor-pointer"
           onClick={onProfileClick}

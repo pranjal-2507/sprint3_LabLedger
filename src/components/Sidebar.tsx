@@ -8,15 +8,15 @@ import {
   Settings, 
   ChevronLeft, 
   ChevronRight,
-  FlaskConical
+  FlaskConical,
+  LogOut
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
-/**
- * Utility for merging Tailwind classes safely
- */
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
@@ -43,6 +43,16 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ activeItem, onItemSelect }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { signOut, profile } = useAuth();
+  const navigate = useNavigate();
+
+  const isAdmin = profile?.role === 'admin';
+  const visibleMenuItems = menuItems;
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/login');
+  };
 
   return (
     <motion.aside
@@ -53,7 +63,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeItem, onItemSelect }) => {
         "shadow-sm z-50"
       )}
     >
-      {/* Sidebar Header */}
       <div className="flex items-center h-16 px-6 mb-4">
         <div className="flex items-center gap-3">
           <div className="bg-sky-500 p-2 rounded-xl text-white">
@@ -74,9 +83,8 @@ const Sidebar: React.FC<SidebarProps> = ({ activeItem, onItemSelect }) => {
         </div>
       </div>
 
-      {/* Menu Items */}
       <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
-        {menuItems.map((item) => {
+        {visibleMenuItems.map((item) => {
           const isActive = activeItem === item.id;
           const Icon = item.icon;
 
@@ -85,7 +93,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeItem, onItemSelect }) => {
               key={item.id}
               onClick={() => onItemSelect(item.id)}
               className={cn(
-                "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative",
+                "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative text-left",
                 isActive 
                   ? "bg-sky-50 text-sky-600 font-medium dark:bg-sky-500/10 dark:text-sky-400" 
                   : "text-slate-500 hover:bg-slate-50 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-900/50 dark:hover:text-slate-200"
@@ -112,7 +120,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeItem, onItemSelect }) => {
                 )}
               </AnimatePresence>
 
-              {/* Active Indicator Bar */}
               {isActive && (
                 <motion.div
                   layoutId="active-nav"
@@ -124,8 +131,34 @@ const Sidebar: React.FC<SidebarProps> = ({ activeItem, onItemSelect }) => {
         })}
       </nav>
 
-      {/* Bottom Footer or Toggle */}
-      <div className="p-4 border-t border-slate-100">
+      <div className="px-4 pb-2">
+        <button
+          onClick={handleSignOut}
+          className={cn(
+            "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all duration-200 group",
+            isCollapsed && "justify-center"
+          )}
+          title={isCollapsed ? "Logout" : ""}
+        >
+          <div className="flex items-center justify-center min-w-[24px]">
+            <LogOut size={20} />
+          </div>
+          <AnimatePresence>
+            {!isCollapsed && (
+              <motion.span
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                className="whitespace-nowrap overflow-hidden text-sm font-medium"
+              >
+                Logout
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </button>
+      </div>
+
+      <div className="p-4 border-t border-slate-100 dark:border-slate-800">
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
           className="flex items-center justify-center w-full py-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg transition-colors"

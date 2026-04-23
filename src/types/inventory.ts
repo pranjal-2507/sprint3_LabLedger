@@ -14,16 +14,14 @@ export interface InventoryItem {
 export interface Transaction {
   id: number;
   item_id: number;
-  type: 'USE';
+  type: 'USE' | 'ADD' | 'UPDATE';
   quantity: number;
   user: string;
-  item_name?: string; // Kept for Dashboard view convenience
-  category?: string;  // Kept for Dashboard view convenience
+  item_name?: string;
+  category?: string;
   created_at: string;
 }
 
-// Keeping UsageLog for backward compatibility if needed, 
-// but transitioning to Transaction
 export type UsageLog = Transaction;
 
 export interface InventoryItemInsert {
