@@ -7,27 +7,13 @@ import type { InventoryItem, Status, InventoryItemInsert } from '../types/invent
 import { inventoryService } from '../services/inventoryService';
 import { useAuth } from '../contexts/AuthContext';
 
-const today = new Date();
-today.setHours(0, 0, 0, 0);
-
-function getStatus(item: InventoryItem): Status {
-  const exp = new Date(item.expiry);
-  if (exp < today) return 'Expired';
-  if (item.quantity <= item.min_stock) return 'Low';
-  return 'In Stock';
-}
-
-const STATUS_STYLE: Record<Status, string> = {
-  'In Stock': 'bg-emerald-50 text-emerald-700 border border-emerald-200',
-  'Low': 'bg-amber-50 text-amber-700 border border-amber-200',
-  'Expired': 'bg-rose-50 text-rose-700 border border-rose-200',
-};
-
-const STATUS_DOT: Record<Status, string> = {
-  'In Stock': 'bg-emerald-500',
-  'Low': 'bg-amber-500',
-  'Expired': 'bg-rose-500',
-};
+import { 
+  getStatus, 
+  STATUS_STYLE, 
+  STATUS_DOT, 
+  INVENTORY_CATEGORIES, 
+  INVENTORY_UNITS 
+} from '../utils/inventory';
 
 const SortIcon = ({ col, sortKey, sortDir }: { col: SortKey; sortKey: SortKey | null; sortDir: SortDir }) => {
   if (sortKey !== col) return <ChevronsUpDown size={14} className="text-slate-300" />;
@@ -41,8 +27,8 @@ interface ModalProps {
   initialData?: InventoryItem;
 }
 
-const UNITS = ['bottles', 'vials', 'pcs', 'packs', 'kg', 'g', 'mg', 'L', 'mL', 'µL', 'units', 'pairs'];
-const CATEGORIES = ['Chemicals', 'Reagents', 'Enzymes', 'Consumables', 'Dyes', 'Equipment', 'Glassware'];
+const UNITS = INVENTORY_UNITS;
+const CATEGORIES = INVENTORY_CATEGORIES;
 
 const InventoryModal: React.FC<ModalProps> = ({ onClose, onSave, initialData }) => {
   const isEdit = !!initialData;

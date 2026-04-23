@@ -13,14 +13,7 @@ import { inventoryService } from '../services/inventoryService';
 import type { InventoryItem, UsageLog } from '../types/inventory';
 import { useAuth } from '../contexts/AuthContext';
 
-const today = new Date();
-today.setHours(0, 0, 0, 0);
-
-function getDaysLeft(expiry: string) {
-  const exp = new Date(expiry);
-  const diffTime = exp.getTime() - today.getTime();
-  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-}
+import { getDaysLeft, today } from '../utils/inventory';
 
 
 const severityColors: Record<string, string> = {
